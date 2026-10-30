@@ -9,7 +9,9 @@ A living document, kept in sync with the implemented state as steps complete.
 - `docs/` — design and decision documentation
 
 Root tooling: TypeScript, ESLint 10 (flat config), npm workspaces for install and script
-orchestration across workspaces.
+orchestration across workspaces. Runtime configuration lives in a single `.env` at the
+repository root (placeholders documented in `.env.example`) — loaded by the API from the
+repo root today, and by the frontend when it scaffolded.
 
 ## System shape — three responsibilities, one repository
 
