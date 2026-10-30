@@ -78,7 +78,7 @@ async function main(): Promise<void> {
   const nameArg = argValue("--name");
   const passwordEnvName = argValue("--password-env");
 
-  stdout.write(`Creating an administrator on ${describeMongoUri(env.mongodbUri ?? "")}\n`);
+  stdout.write(`Creating an administrator on ${describeMongoUri(env.mongodbUri)}\n`);
 
   let email = emailArg ?? (isInteractive ? await rl.question("Admin email: ") : undefined);
   if (!email) throw new Error("Run interactively (email/password prompts) or pass --email and --password-env");
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
 
   await AdminModel.create({ name, email, passwordHash: await hashPassword(password) });
 
-  logger.info({ email, database: describeMongoUri(env.mongodbUri ?? "") }, "Administrator created");
+  logger.info({ email, database: describeMongoUri(env.mongodbUri) }, "Administrator created");
   rl.close();
   await disconnectDatabase();
 }

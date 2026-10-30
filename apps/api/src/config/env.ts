@@ -41,6 +41,7 @@ if (repoRootEnvPath && existsSync(repoRootEnvPath)) {
  *   - Step 3 wires MONGODB_URI / MONGODB_DB_NAME.
  *   - Step 5 wires AUTH_SESSION_TTL_MINUTES.
  */
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_PORT: z.coerce
@@ -72,35 +73,15 @@ const envSchema = z.object({
     .default(300),
   MONGODB_URI: z
     .string()
-    .optional()
+    .min(1)
     .refine(
-      (value) => value === undefined || /^mongodb(\+srv)?:\/\//.test(value),
+      (value) => /^mongodb(\+srv)?:\/\//.test(value),
       { message: "must be a mongodb:// or mongodb+srv:// connection string" },
     ),
-  MONGODB_DB_NAME: z.string().min(1).optional(),
+  MONGODB_DB_NAME: z.string().min(1),
   AUTH_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(43_200).default(480),
   AUTH_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(8),
   AUTH_LOGIN_WINDOW_MINUTES: z.coerce.number().int().min(1).max(240).default(15),
-})
-.superRefine((data, ctx) => {
-  // Test runs use mongodb-memory-server with a dynamically allocated URI, so
-  // real connectivity config must not be demanded there. Everywhere else the
-  // boot hard-fails — never boot a "working" API without its database.
-  if (data.NODE_ENV === "test") return;
-  if (!data.MONGODB_URI) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["MONGODB_URI"],
-      message: "MONGODB_URI is required outside the test environment",
-    });
-  }
-  if (!data.MONGODB_DB_NAME) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["MONGODB_DB_NAME"],
-      message: "MONGODB_DB_NAME is required outside the test environment",
-    });
-  }
 });
 
 export type ApiEnv = {
@@ -110,8 +91,8 @@ export type ApiEnv = {
   corsOrigins: string[];
   rateLimitWindowMinutes: number;
   rateLimitMaxRequests: number;
-  mongodbUri?: string;
-  mongodbDbName?: string;
+  mongodbUri: string;
+  mongodbDbName: string;
   authSessionTtlMinutes: number;
   authLoginMaxAttempts: number;
   authLoginWindowMinutes: number;
@@ -141,4 +122,3 @@ export const env: ApiEnv = {
 };
 
 export const isProd = env.nodeEnv === "production";
-export const isTest = env.nodeEnv === "test";

@@ -26,8 +26,12 @@ repo root today, and by the frontend when it scaffolded.
   databases). Relationships modeled with document references; indexes justified by measured
   query patterns (see `docs/decisions.md` and the delivered README for indexing rationale).
   The boot sequence hard-fails without a reachable database; health exposes liveness with
-  truthful `database.state` in the payload. Tests run against `mongodb-memory-server` so
-  they never touch dev data.
+  truthful `database.state` in the payload.
+
+- **Verification policy (decision #15)** — no automated test suite in this project by user
+  choice: every feature step keeps `typecheck`, `lint` and `build` green and is verified
+  with guided live smoke checks against the dev database (synthetic-only data). Automated
+  testing is a documented future improvement.
 
 - **Schemas & indexes** (Step 4): `Doctor` (name/specialization/hospital/phone/lowercase
   unique email) and `Patient` (name, phone/email with a both-must-not-be-empty rule, coarse

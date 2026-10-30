@@ -172,7 +172,7 @@ const isDirectRun = process.argv[1]?.endsWith("seed.ts") || process.argv[1]?.end
 if (isDirectRun) {
   seed()
     .then(async (summary) => {
-      logger.info({ database: describeMongoUri(env.mongodbUri ?? ""), summary }, "Seed finished");
+      logger.info({ database: describeMongoUri(env.mongodbUri), summary }, "Seed finished");
       await disconnectDatabase();
     })
     .catch(async (err) => {

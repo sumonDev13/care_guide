@@ -4,7 +4,7 @@ import type { RequestHandler } from "express";
 import { env } from "../config/env.js";
 
 /**
- * Root pino logger. Test runs default to `silent` via vitest test env.
+ * Root pino logger. Its level is environment-driven (`LOG_LEVEL`, default info).
  */
 export const logger = pino({ level: env.logLevel });
 

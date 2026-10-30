@@ -46,7 +46,7 @@ function bindLifecycleEventsOnce(): void {
   lifecycleEventsBound = true;
 
   mongoose.connection.on("connected", () => {
-    logger.info(`MongoDB connected (${describeMongoUri(env.mongodbUri ?? "")})`);
+    logger.info(`MongoDB connected (${describeMongoUri(env.mongodbUri)})`);
   });
   mongoose.connection.on("disconnected", () => {
     logger.warn("MongoDB disconnected");
@@ -56,15 +56,9 @@ function bindLifecycleEventsOnce(): void {
   });
 }
 
-export async function connectDatabase(
-  options?: {
-    uri?: string;
-    dbName?: string;
-    serverSelectionTimeoutMs?: number;
-  },
-): Promise<typeof mongoose> {
-  const uri = options?.uri ?? env.mongodbUri;
-  const dbName = options?.dbName ?? env.mongodbDbName;
+export async function connectDatabase(): Promise<typeof mongoose> {
+  const uri = env.mongodbUri;
+  const dbName = env.mongodbDbName;
 
   if (!uri) {
     throw new Error("connectDatabase called without MONGODB_URI");
@@ -85,7 +79,7 @@ export async function connectDatabase(
         // Modest, documented ceiling for an admin app; revisit with real load
         // numbers instead of guessing larger pools.
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: options?.serverSelectionTimeoutMs ?? 10_000,
+        serverSelectionTimeoutMS: 10_000,
       })
       .catch((err: unknown) => {
         // A rejected memoized promise would make every future call fail the
