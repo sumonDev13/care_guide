@@ -21,9 +21,13 @@ repo root today, and by the frontend when it scaffolded.
   cache invalidation so cached sensitive data cannot silently go stale.
 - **Backend (`apps/api`)**: authentication, authorization, validation, business logic, and
   data access. The sole owner of MongoDB. No application logic in Next.js route handlers.
-- **Database**: MongoDB on Atlas (web-hosted), accessed via Mongoose. Relationships modeled
-  with document references; indexes justified by measured query patterns (see
-  `docs/decisions.md` and the delivered README for indexing rationale).
+- **Database**: MongoDB on Atlas (web-hosted), accessed via Mongoose. One memoized connection
+  per process (explicit `dbName`; a single cluster hosts dev/test/prod as separate
+  databases). Relationships modeled with document references; indexes justified by measured
+  query patterns (see `docs/decisions.md` and the delivered README for indexing rationale).
+  The boot sequence hard-fails without a reachable database; health exposes liveness with
+  truthful `database.state` in the payload. Tests run against `mongodb-memory-server` so
+  they never touch dev data.
 
 ## Core flows (planned, refined during implementation)
 

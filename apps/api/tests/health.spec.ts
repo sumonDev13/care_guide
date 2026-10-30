@@ -9,13 +9,14 @@ describe("GET /api/health", () => {
     expect(res.headers["content-type"]).toMatch(/application\/json/);
     expect(res.body).toEqual({
       success: true,
-      data: {
-        status: "ok",
+      data: expect.objectContaining({
+        status: "degraded", // no database in pure HTTP-layer tests
         service: "doctor-tracker-api",
         version: expect.any(String),
         uptimeSeconds: expect.any(Number),
+        database: { state: "disconnected" },
         timestamp: expect.any(String),
-      },
+      }),
     });
   });
 

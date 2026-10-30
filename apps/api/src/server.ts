@@ -1,6 +1,18 @@
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
+import { connectDatabase, disconnectDatabase } from "./config/mongodb.js";
 import { logger } from "./middleware/request-logger.js";
+
+/**
+ * Hard-fail fast: a database-less API instance would silently serve nothing
+ * useful — better to crash-loop visibly than to look healthy while broken.
+ */
+try {
+  await connectDatabase();
+} catch (err) {
+  logger.error({ err }, "Failed to connect to MongoDB — refusing to start");
+  process.exit(1);
+}
 
 const app = createApp();
 
@@ -24,7 +36,11 @@ function shutdown(signal: string): void {
   if (isShuttingDown) return;
   isShuttingDown = true;
   logger.info(`${signal} received — closing server gracefully`);
-  server.close(() => process.exit(0));
+  server.close(() => {
+    void disconnectDatabase()
+      .catch(() => undefined)
+      .then(() => process.exit(0));
+  });
   // In-flight requests get a grace window; then we leave regardless.
   setTimeout(() => process.exit(0), 3_000).unref();
 }
