@@ -1,5 +1,16 @@
 import { Router } from "express";
+import type { RequestHandler } from "express";
 import { healthRouter } from "./health.routes.js";
+import { makeAuthRouter } from "./auth.routes.js";
+
+/**
+ * Options plumbed only for test isolation of shared-process behavior
+ * (currently the login limiter); production always uses env defaults.
+ * (Lives here so app.ts can type-import it without import cycles.)
+ */
+export type CreateAppOptions = {
+  loginLimiter?: RequestHandler;
+};
 
 /**
  * Mounted at /api. Routers are added per feature as steps land:
@@ -8,6 +19,11 @@ import { healthRouter } from "./health.routes.js";
  *   /api/patients    (Step 7)
  *   /api/dashboard   (Step 11)
  */
-export const apiRouter = Router();
+export function makeApiRouter(options: CreateAppOptions = {}): Router {
+  const apiRouter = Router();
 
-apiRouter.use("/", healthRouter);
+  apiRouter.use("/", healthRouter);
+  apiRouter.use("/auth", makeAuthRouter(options.loginLimiter));
+
+  return apiRouter;
+}

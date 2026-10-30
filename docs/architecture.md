@@ -42,7 +42,10 @@ repo root today, and by the frontend when it scaffolded.
   `SameSite` cookie → only the SHA-256 hash of the token is stored in MongoDB in a
   TTL-indexed `sessions` collection → every protected endpoint verifies via auth middleware
   → logout removes the session server-side and clears the cookie. Nothing sensitive lives
-  in browser storage.
+  in browser storage. Login throttling (8 attempts / 15 min per IP) and triple CSRF
+  defenses (SameSite + Origin allowlist + required `X-Requested-With` header on
+  mutations) are wired at this layer; administrator accounts are created only through the
+  `create-admin` script (documented, prompts for a password, refuses duplicated emails).
 - **Doctor–patient relationship**: the patient document holds a required, validated
   `doctorId` reference — the single source of truth. A doctor's patient list is derived by
   query, never duplicated in a second collection.

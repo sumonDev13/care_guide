@@ -78,6 +78,9 @@ const envSchema = z.object({
       { message: "must be a mongodb:// or mongodb+srv:// connection string" },
     ),
   MONGODB_DB_NAME: z.string().min(1).optional(),
+  AUTH_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(43_200).default(480),
+  AUTH_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(8),
+  AUTH_LOGIN_WINDOW_MINUTES: z.coerce.number().int().min(1).max(240).default(15),
 })
 .superRefine((data, ctx) => {
   // Test runs use mongodb-memory-server with a dynamically allocated URI, so
@@ -109,6 +112,9 @@ export type ApiEnv = {
   rateLimitMaxRequests: number;
   mongodbUri?: string;
   mongodbDbName?: string;
+  authSessionTtlMinutes: number;
+  authLoginMaxAttempts: number;
+  authLoginWindowMinutes: number;
 };
 
 const parsed = envSchema.safeParse(process.env);
@@ -129,6 +135,9 @@ export const env: ApiEnv = {
   rateLimitMaxRequests: parsed.data.RATE_LIMIT_MAX_REQUESTS,
   mongodbUri: parsed.data.MONGODB_URI,
   mongodbDbName: parsed.data.MONGODB_DB_NAME,
+  authSessionTtlMinutes: parsed.data.AUTH_SESSION_TTL_MINUTES,
+  authLoginMaxAttempts: parsed.data.AUTH_LOGIN_MAX_ATTEMPTS,
+  authLoginWindowMinutes: parsed.data.AUTH_LOGIN_WINDOW_MINUTES,
 };
 
 export const isProd = env.nodeEnv === "production";
