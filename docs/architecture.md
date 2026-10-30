@@ -29,6 +29,13 @@ repo root today, and by the frontend when it scaffolded.
   truthful `database.state` in the payload. Tests run against `mongodb-memory-server` so
   they never touch dev data.
 
+- **Schemas & indexes** (Step 4): `Doctor` (name/specialization/hospital/phone/lowercase
+  unique email) and `Patient` (name, phone/email with a both-must-not-be-empty rule, coarse
+  condition enum, required validated `doctor` reference, optional age/gender). Query-pattern
+  indexes: doctors `{email unique, createdAt:-1, [specialization,hospital]+createdAt}`;
+  patients `{[doctor, condition]+createdAt, createdAt:-1}`. Seed script (`npm run seed
+  -w apps/api`) generates deterministic synthetic-only data (refuses `NODE_ENV=production`).
+
 ## Core flows (planned, refined during implementation)
 
 - **Auth**: admin logs in → backend issues an opaque random session token in an `HttpOnly`
