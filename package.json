@@ -1,0 +1,25 @@
+{
+  "name": "doctor-tracker",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Secure administrative dashboard for managing doctors, patients, and analytics.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "node scripts/run-if-workspaces.mjs typecheck",
+    "test": "node scripts/run-if-workspaces.mjs test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

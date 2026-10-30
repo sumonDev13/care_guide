@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+build/
+out/
+.next/
+
+# Test and coverage output
+coverage/
+
+# Environment files — keep only the placeholder example tracked
+.env
+.env.*
+!.env.example
+
+# Logs and tool caches
+logs/
+*.log
+.eslintcache
+*.tsbuildinfo
+
+# Database artifacts (local dumps; production DB is hosted on Atlas)
+mongo-data/
+*.dump
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
