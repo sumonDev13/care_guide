@@ -59,10 +59,10 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="pageActions">
-          <Link href="/doctors" className="button">
+          <Link href="/doctors" className="btnGhost">
             View Doctors
           </Link>
-          <Link href="/patients" className="button">
+          <Link href="/patients" className="btnGhost">
             View Patients
           </Link>
         </div>
