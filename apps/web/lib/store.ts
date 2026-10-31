@@ -12,6 +12,8 @@ export function makeStore() {
     reducer: {
       [api.reducerPath]: api.reducer,
     },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(api.middleware),
   });
 }
 
