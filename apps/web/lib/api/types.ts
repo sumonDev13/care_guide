@@ -108,3 +108,58 @@ export type ListDoctorPatientsParams = {
   page?: number;
   limit?: number;
 };
+
+/* ---- Patients (decision #17 semantics) ----------------------------------- */
+
+export type PatientSummary = {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  condition: string;
+  /** Assigned doctor as a bare id — names are joined client-side. */
+  doctorId: string;
+  age?: number;
+  gender?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PatientCreateDto = {
+  name: string;
+  condition: string;
+  /** 24-character doctor ObjectId. */
+  doctor: string;
+  phone?: string;
+  email?: string;
+  age?: number;
+  gender?: string;
+};
+
+/**
+ * PATCH — any subset; `null` explicitly clears an optional field
+ * (implemented API-side via $unset, decision #17), an absent key leaves the
+ * stored value untouched (JSON.stringify drops undefined).
+ */
+export type PatientUpdateDto = {
+  name?: string;
+  condition?: string;
+  doctor?: string;
+  phone?: string | null;
+  email?: string | null;
+  age?: number | null;
+  gender?: string | null;
+};
+
+export type ListPatientsParams = {
+  search?: string;
+  condition?: string;
+  /** Filter by assigned doctor's ObjectId. */
+  doctor?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+};
+
+/** Optional demographics — mirrored from the patient model. */
+export const PATIENT_GENDERS = ["male", "female", "other"] as const;

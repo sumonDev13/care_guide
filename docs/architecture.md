@@ -77,8 +77,22 @@ single-root policy applies to the API).
   `LIST`-sentinel + per-id layout so every write keeps the visible pages truthful with
   minimal refetching. Deletion requires an explicit confirm dialog and renders the API's
   409 "patients still assigned" guidance inline. The doctor detail page also hosts the
-  per-doctor patient pages (`GET /api/doctors/:id/patients`) with condition/sort filters;
-  patient mutations deliberately wait for Step 10.
+  per-doctor patient pages (`GET /api/doctors/:id/patients`) with condition/sort filters.
+- **Patients UI (Step 10)**: `/patients` mirrors the doctors table with the API's
+  patient list surface — debounced search, `condition` and doctor-filter selects (both
+  fed by one doctor-directory query), whitelisted sorts and the pager. The payload only
+  carries a bare `doctorId` (no denormalized doctor data), so the table joins doctor
+  names client-side from the directory map. Create renders the API-first validation
+  pattern with the contact-rule hint; the doctor picker blocks submission until the
+  directory loads. Edit is where #17's tri-state patch semantics become explicit
+  controls: a filled field means "set", a per-field Clear checkbox (phone/email/age) or
+  the `__clear__` gender sentinel means JSON `null` → `$unset`, and an emptied field
+  means the key is omitted (value untouched). A non-numeric age is caught locally so it
+  can never serialize as NaN → `null` and silently clear the stored age. Patient
+  mutations invalidate both tag families — the patient tags plus the original (and, on
+  reassignment, the new) doctor tag — keeping per-doctor patient pages and counts
+  truthful without manual refetch wiring. Deletion is a confirmed HARD delete; the
+  detail page's delete navigates back to the registry afterwards.
 - **Doctor–patient relationship**: the patient document holds a required, validated
   `doctorId` reference — the single source of truth. A doctor's patient list is derived by
   query, never duplicated in a second collection.

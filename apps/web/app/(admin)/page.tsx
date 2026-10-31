@@ -25,10 +25,14 @@ export default function AdminHomePage() {
           </Link>
         </li>
         <li>
-          <div className="homeCard disabled" aria-disabled="true">
+          <Link className="homeCard" href="/patients">
             <strong>Patients</strong>
-            <span>Full patient registry and management — lands in the next step.</span>
-          </div>
+            <span>
+              Search, filter and sort the full registry; create and edit
+              records (contact rule, doctor reassignment, null-clear fields);
+              delete with hard-delete confirmation.
+            </span>
+          </Link>
         </li>
       </ul>
     </section>

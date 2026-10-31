@@ -7,8 +7,12 @@ import type {
   DoctorUpdateDto,
   ListDoctorPatientsParams,
   ListDoctorsParams,
+  ListPatientsParams,
   LoginCredentials,
   PaginationMeta,
+  PatientCreateDto,
+  PatientSummary,
+  PatientUpdateDto,
   SessionData,
 } from "./types";
 
@@ -37,6 +41,11 @@ function doctorTag(id: DoctorTagId): { type: "Doctors"; id: DoctorTagId } {
   return { type: "Doctors", id };
 }
 
+type PatientTagId = string | "LIST";
+function patientTag(id: PatientTagId): { type: "Patients"; id: PatientTagId } {
+  return { type: "Patients", id };
+}
+
 /**
  * The single typed RTK Query slice (decision #7). New data surfaces
  * (patients in Step 10) register their endpoints and tags here.
@@ -60,7 +69,7 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Session", "Doctors"],
+  tagTypes: ["Session", "Doctors", "Patients"],
   endpoints: (builder) => ({
     /* ---- Session ------------------------------------------------------- */
     me: builder.query<SessionData, void>({
@@ -130,6 +139,54 @@ export const api = createApi({
       transformResponse: (raw: ApiEnvelope<{ deleted: boolean }>) => raw.data.deleted,
       invalidatesTags: (_result, _error, id) => [doctorTag("LIST"), doctorTag(id)],
     }),
+
+    /* ---- Patients (Step 10, decision #17 semantics) --------------------- */
+    getPatients: builder.query<{ patients: PatientSummary[]; meta: PaginationMeta }, ListPatientsParams>({
+      query: (params) => ({ url: "patients", params: listQuery(params) }),
+      transformResponse: (raw: ApiEnvelope<{ patients: PatientSummary[] }>) => ({
+        patients: raw.data.patients,
+        meta: raw.meta ?? EMPTY_PAGINATION,
+      }),
+      providesTags: (result) =>
+        result && result.patients.length > 0
+          ? [patientTag("LIST"), ...result.patients.map((patient) => patientTag(patient.id))]
+          : [patientTag("LIST")],
+    }),
+    getPatient: builder.query<PatientSummary, string>({
+      query: (id) => `patients/${id}`,
+      transformResponse: (raw: ApiEnvelope<{ patient: PatientSummary }>) => raw.data.patient,
+      providesTags: (_result, _error, id) => [patientTag(id)],
+    }),
+    createPatient: builder.mutation<PatientSummary, PatientCreateDto>({
+      query: (dto) => ({ url: "patients", method: "POST", body: dto }),
+      transformResponse: (raw: ApiEnvelope<{ patient: PatientSummary }>) => raw.data.patient,
+      // The assigned doctor's patient pages (search + counts) must refetch.
+      invalidatesTags: (_result, _error, dto) => [patientTag("LIST"), doctorTag(dto.doctor)],
+    }),
+    updatePatient: builder.mutation<
+      PatientSummary,
+      { id: string; patch: PatientUpdateDto; currentDoctorId: string }
+    >({
+      query: ({ id, patch }) => ({ url: `patients/${id}`, method: "PATCH", body: patch }),
+      transformResponse: (raw: ApiEnvelope<{ patient: PatientSummary }>) => raw.data.patient,
+      invalidatesTags: (_result, _error, { id, patch, currentDoctorId }) => {
+        const tags = [patientTag("LIST"), patientTag(id), doctorTag(currentDoctorId)];
+        // A reassignment also refreshes the NEW doctor's patient pages.
+        if (patch.doctor !== undefined && patch.doctor !== currentDoctorId) {
+          tags.push(doctorTag(patch.doctor));
+        }
+        return tags;
+      },
+    }),
+    deletePatient: builder.mutation<boolean, { id: string; doctorId: string }>({
+      query: ({ id }) => ({ url: `patients/${id}`, method: "DELETE" }),
+      transformResponse: (raw: ApiEnvelope<{ deleted: boolean }>) => raw.data.deleted,
+      invalidatesTags: (_result, _error, { id, doctorId }) => [
+        patientTag("LIST"),
+        patientTag(id),
+        doctorTag(doctorId), // the ex-doctor's patient page/count refresh
+      ],
+    }),
   }),
 });
 
@@ -143,4 +200,9 @@ export const {
   useCreateDoctorMutation,
   useUpdateDoctorMutation,
   useDeleteDoctorMutation,
+  useGetPatientsQuery,
+  useGetPatientQuery,
+  useCreatePatientMutation,
+  useUpdatePatientMutation,
+  useDeletePatientMutation,
 } = api;
