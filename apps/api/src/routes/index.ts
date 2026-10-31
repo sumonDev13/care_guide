@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { RequestHandler } from "express";
 import { healthRouter } from "./health.routes.js";
 import { makeAuthRouter } from "./auth.routes.js";
+import { makeDoctorsRouter } from "./doctors.routes.js";
 
 /**
  * Options plumbed only for test isolation of shared-process behavior
@@ -24,6 +25,7 @@ export function makeApiRouter(options: CreateAppOptions = {}): Router {
 
   apiRouter.use("/", healthRouter);
   apiRouter.use("/auth", makeAuthRouter(options.loginLimiter));
+  apiRouter.use("/doctors", makeDoctorsRouter());
 
   return apiRouter;
 }

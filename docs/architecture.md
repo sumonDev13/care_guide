@@ -53,6 +53,14 @@ repo root today, and by the frontend when it scaffolded.
 - **Doctor–patient relationship**: the patient document holds a required, validated
   `doctorId` reference — the single source of truth. A doctor's patient list is derived by
   query, never duplicated in a second collection.
+- **Doctors API (Step 6)**: everything sits under `/api/doctors`, session-guarded —
+  `POST /` create (201), `GET /` list with search/filter/sort/pagination (decision #16
+  conventions), `GET /:id` detail, `PATCH /:id` edit (model validators run on updates), and
+  `GET /:id/patients` paged patient listings per doctor. Duplicate emails surface as
+  `409 Conflict` (mapped from the Mongo E11000 unique-index signal — also true when a
+  PATCH collides); no-op PATCH bodies are a 422; malformed route ids are a 400; absent
+  resources a 404. Doctor deletion deliberately lands with the patients API (Step 7) so
+  both deletion rules ship together (decision #6).
 - **Deletion policies**: patients are hard-deleted after an explicit confirmation dialog;
   doctor deletion is rejected with `409 Conflict` while any patient remains assigned.
 

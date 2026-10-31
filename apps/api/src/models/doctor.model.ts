@@ -21,6 +21,13 @@ export interface DoctorDoc {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+?[\d\s\-()]{7,20}$/;
 
+/**
+ * Shared with the request validators so DB-level rules and API-level rules
+ * cannot drift apart; the validators import these instead of restating.
+ */
+export const DOCTOR_EMAIL_PATTERN = EMAIL_PATTERN;
+export const DOCTOR_PHONE_PATTERN = PHONE_PATTERN;
+
 const doctorSchema = new Schema<DoctorDoc>(
   {
     name: {
