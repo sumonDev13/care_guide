@@ -5,20 +5,30 @@ A living document, kept in sync with the implemented state as steps complete.
 ## Monorepo layout (npm workspaces)
 
 - `apps/api` — Express REST API backend (scaffolded in Step 2)
-- `apps/web` — Next.js App Router frontend (scaffolded in Step 8)
+- `apps/web` — Next.js 16 App Router frontend (scaffolded in Step 8): route groups
+  (`(admin)` = protected shell, `login` = public), a Redux Toolkit store with a single
+  typed RTK Query slice under `lib/api/`, and a same-origin `/api/*` proxy configured in
+  `next.config.ts`
 - `docs/` — design and decision documentation
 
 Root tooling: TypeScript, ESLint 10 (flat config), npm workspaces for install and script
 orchestration across workspaces. Runtime configuration lives in a single `.env` at the
 repository root (placeholders documented in `.env.example`) — loaded by the API from the
-repo root today, and by the frontend when it scaffolded.
+repo root. The frontend takes no env in development (its proxy default targets
+`http://localhost:4000`); in production the web process receives `WEB_API_ORIGIN` through
+its deployment environment (Next.js reads `.env` files only from its own root, so the
+single-root policy applies to the API).
 
 ## System shape — three responsibilities, one repository
 
 - **Frontend (`apps/web`)**: presentation, interaction, forms, charts. Communicates only with
   the REST API — no direct database access and no business rules. Client state handled with
   Redux Toolkit; server data fetched through **RTK Query** typed endpoints with tag-based
-  cache invalidation so cached sensitive data cannot silently go stale.
+  cache invalidation so cached sensitive data cannot silently go stale. All API traffic is
+  same-origin: the Next server proxies `/api/:path*` to the API process (decision #18), so
+  the `dt_session` cookie is first-party, the browser's `Origin` header reaches the API
+  unchanged through the CSRF allowlist, and no CORS surface exists. The web process
+  receives `WEB_API_ORIGIN` via its environment (default `http://localhost:4000` in dev).
 - **Backend (`apps/api`)**: authentication, authorization, validation, business logic, and
   data access. The sole owner of MongoDB. No application logic in Next.js route handlers.
 - **Database**: MongoDB on Atlas (web-hosted), accessed via Mongoose. One memoized connection
@@ -50,6 +60,15 @@ repo root today, and by the frontend when it scaffolded.
   defenses (SameSite + Origin allowlist + required `X-Requested-With` header on
   mutations) are wired at this layer; administrator accounts are created only through the
   `create-admin` script (documented, prompts for a password, refuses duplicated emails).
+- **Frontend session (Step 8)**: the browser talks only to the Next server (same-origin
+  `/api` proxy), so the auth cookie never enters cross-site territory and the CSRF gate
+  sees the browser's own `Origin`. The `(admin)` route-group layout guards rendering on
+  the live `GET /api/auth/me` result — `401` redirects to `/login`, a broken API produces
+  a reconnect panel — because the `HttpOnly` cookie is invisible to the Next server and
+  server layouts cannot know about sessions. `/login` probes the same endpoint to bounce
+  already-authenticated visitors. Mutations inject `X-Requested-With: XMLHttpRequest`
+  centrally in fetchBaseQuery's `prepareHeaders`; logout resets the entire RTK cache via
+  a store listener middleware so protected data never outlives the session client-side.
 - **Doctor–patient relationship**: the patient document holds a required, validated
   `doctorId` reference — the single source of truth. A doctor's patient list is derived by
   query, never duplicated in a second collection.

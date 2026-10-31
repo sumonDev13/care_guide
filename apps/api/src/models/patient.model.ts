@@ -1,5 +1,4 @@
-import mongoose, { Schema } from "mongoose";
-import type { ObjectId } from "mongodb";
+import mongoose, { type Types, Schema } from "mongoose";
 import type { DoctorDoc } from "./doctor.model.js";
 
 /**
@@ -30,7 +29,7 @@ export interface PatientDoc {
   phone?: string;
   email?: string;
   condition: PatientCondition;
-  doctor: ObjectId;
+  doctor: Types.ObjectId;
   age?: number;
   gender?: PatientGender;
   createdAt?: Date;
