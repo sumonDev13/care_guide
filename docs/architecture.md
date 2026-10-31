@@ -61,8 +61,28 @@ repo root today, and by the frontend when it scaffolded.
   PATCH collides); no-op PATCH bodies are a 422; malformed route ids are a 400; absent
   resources a 404. Doctor deletion deliberately lands with the patients API (Step 7) so
   both deletion rules ship together (decision #6).
-- **Deletion policies**: patients are hard-deleted after an explicit confirmation dialog;
-  doctor deletion is rejected with `409 Conflict` while any patient remains assigned.
+- **Patients API (Step 7)**: everything sits under `/api/patients`, session-guarded —
+  `POST /` create (201), `GET /` list (search across name/email/phone, `condition` and
+  `doctor` filters, `name|condition|createdAt` sorts, decision #16 pagination),
+  `GET /:id` detail, `PATCH /:id` edit, and `DELETE /:id` hard delete. Patient edits merge
+  the patch into the current state and validate the FULL merged state before writing so
+  the contact rule ("at least one of phone/email") holds for any piecewise edit; optional
+  fields clear through JSON `null` (implemented via `$unset`, since Mongoose drops
+  `$set: undefined`); reassignment to a different doctor re-verifies the new doctor's
+  existence. Model `runValidators` is deliberately OFF for the merged-state PATCH write —
+  Mongoose update validators cannot resolve `this`-dependent cross-field rules; creation
+  keeps the model backstop, and the central error handler maps stray Mongoose
+  `ValidationError`s to the standard 422 envelope.
+
+## Core flows (planned, refined during implementation) — deletion policies (wired in Step 7)
+
+- **Patients** are hard-deleted (`DELETE /api/patients/:id`) after an explicit confirmation
+  dialog on the frontend; the API exposes exactly one delete verb, so stale sensitive data
+  cannot linger behind soft-delete flags.
+- **Doctors** are deleted only when no patient remains assigned (`DELETE /api/doctors/:id`
+  → `409 Conflict` otherwise, no cascade). The patient-side pre("save") doctor-existence
+  hook closes the race window between the assignment check and the delete, so neither
+  direction can orphan a reference without transactions.
 
 ## Development considerations (Atlas)
 

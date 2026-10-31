@@ -1,6 +1,12 @@
 import { DoctorModel, type DoctorDoc } from "../models/doctor.model.js";
 import { PatientModel } from "../models/patient.model.js";
 import { ApiError } from "../utils/errors.js";
+import {
+  buildPaginationMeta,
+  buildSort,
+  escapeRegExp,
+  type PaginationMeta,
+} from "../utils/pagination.js";
 import type {
   CreateDoctorDto,
   ListDoctorPatientsQuery,
@@ -80,28 +86,11 @@ function toPatientSummary(doc: LeanPatient): DoctorPatientSummary {
   };
 }
 
-export type PaginationMeta = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
-
-function buildPaginationMeta(page: number, limit: number, total: number): PaginationMeta {
-  // An empty list still reports one logical page — totalPages is never zero
-  // so paginated UIs can always render "page 1 of 1".
-  return { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) };
-}
-
 /** E11000 (unique-index violation) is the business rule "email already taken". */
 function conflictIfDuplicateEmail(error: unknown): void {
   if (error instanceof Error && (error as { code?: unknown }).code === MONGO_DUPLICATE_KEY) {
     throw ApiError.conflict("A doctor with this email address already exists.");
   }
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /** Exact match ignoring case — user-typed casing must not matter. */
@@ -144,25 +133,27 @@ export async function updateDoctor(id: string, patch: UpdateDoctorDto): Promise<
   }
 }
 
-const DOCTOR_SORT_FIELDS = ["name", "specialization", "hospital", "createdAt"] as const;
-const PATIENT_SORT_FIELDS = ["name", "createdAt"] as const;
+/**
+ * Deletion guard (decision #6): a doctor with any assigned patient cannot be
+ * deleted — 409, no cascade, no silent orphaning. The race window between the
+ * patient check and the delete is closed by the patient-side pre("save") hook,
+ * which validates the doctor reference at every write.
+ */
+export async function deleteDoctor(id: string): Promise<void> {
+  const doctor = await DoctorModel.findById(id, { _id: 1 }).lean();
+  if (!doctor) throw ApiError.notFound("Doctor not found.");
 
-/** Sort parse shared by both lists: `-prefix` = descending, else ascending. */
-function buildSort(
-  rawSort: string | undefined,
-  defaultSort: string,
-  allowedFields: readonly string[],
-): Record<string, 1 | -1> {
-  const raw = rawSort ?? defaultSort;
-  const descending = raw.startsWith("-");
-  const field = descending ? raw.slice(1) : raw;
+  const hasPatients = await PatientModel.exists({ doctor: id });
+  if (hasPatients) {
+    throw ApiError.conflict(
+      "The doctor still has assigned patients — delete or reassign the patients first.",
+    );
+  }
 
-  // Redundant with validator whitelisting; keeps the service safe for any
-  // future caller that skips the request layer.
-  const allowed = allowedFields.includes(field) ? field : defaultSort.replace(/^-/, "");
-
-  return { [allowed]: descending ? -1 : 1 };
+  await DoctorModel.deleteOne({ _id: id });
 }
+
+const DOCTOR_SORT_FIELDS = ["name", "specialization", "hospital", "createdAt"] as const;
 
 export async function listDoctors(query: ListDoctorsQuery): Promise<{
   doctors: DoctorSummary[];
@@ -216,6 +207,7 @@ export async function listDoctorPatients(
   const filter: Record<string, unknown> = { doctor: id };
   if (query.condition) filter.condition = query.condition;
 
+  const PATIENT_SORT_FIELDS = ["name", "createdAt"] as const;
   const sort = buildSort(query.sort, "-createdAt", PATIENT_SORT_FIELDS);
   const skip = (query.page - 1) * query.limit;
 

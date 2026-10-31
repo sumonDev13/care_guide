@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/errors.js";
 
@@ -42,6 +43,29 @@ export function errorHandler(
     const details = err.issues.map((issue) => ({
       field: issue.path.join(".") || "(root)",
       message: issue.message,
+    }));
+    sendError(
+      res,
+      422,
+      {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "The provided data is invalid.",
+          details,
+        },
+      },
+      requestId,
+    );
+    return;
+  }
+
+  if (err instanceof mongoose.Error.ValidationError) {
+    // Mongoose model-level validation (e.g. the patient-side doctor reference
+    // hook) reaching the pipeline instead of a service-mapped ApiError.
+    const details = Object.values(err.errors).map((cause) => ({
+      field: String(cause.path),
+      message: cause.message,
     }));
     sendError(
       res,

@@ -18,6 +18,13 @@ export type PatientGender = (typeof PATIENT_GENDERS)[number];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+?[\d\s\-()]{7,20}$/;
 
+/**
+ * Shared with the request validators so DB-level rules and API-level rules
+ * cannot drift apart; the validators import these instead of restating.
+ */
+export const PATIENT_EMAIL_PATTERN = EMAIL_PATTERN;
+export const PATIENT_PHONE_PATTERN = PHONE_PATTERN;
+
 export interface PatientDoc {
   name: string;
   phone?: string;

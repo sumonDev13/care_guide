@@ -3,6 +3,7 @@ import { ApiError } from "../utils/errors.js";
 import { sendSuccess } from "../utils/http-response.js";
 import {
   createDoctor,
+  deleteDoctor,
   getDoctor,
   listDoctors,
   listDoctorPatients,
@@ -59,4 +60,9 @@ export async function listDoctorPatientsHandler(req: Request, res: Response): Pr
   const query = listDoctorPatientsQuerySchema.parse(req.query);
   const { patients, meta } = await listDoctorPatients(doctorId, query);
   sendSuccess(res, { patients }, meta);
+}
+
+export async function deleteDoctorHandler(req: Request, res: Response): Promise<void> {
+  await deleteDoctor(parseDoctorId(req));
+  sendSuccess(res, { deleted: true });
 }
