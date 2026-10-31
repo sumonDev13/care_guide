@@ -13,7 +13,9 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <section className="page">
-        <h1>Dashboard</h1>
+        <div className="pageHead">
+          <h1>Dashboard</h1>
+        </div>
         <p className="emptyState">Loading analytics…</p>
       </section>
     );
@@ -22,7 +24,9 @@ export default function DashboardPage() {
   if (error) {
     return (
       <section className="page">
-        <h1>Dashboard</h1>
+        <div className="pageHead">
+          <h1>Dashboard</h1>
+        </div>
         <p className="alert" role="alert">
           {failureMessage(error)}
         </p>
@@ -33,19 +37,35 @@ export default function DashboardPage() {
   if (!stats) {
     return (
       <section className="page">
-        <h1>Dashboard</h1>
+        <div className="pageHead">
+          <h1>Dashboard</h1>
+        </div>
         <p className="emptyState">No data available.</p>
       </section>
     );
   }
 
+  const conditions = stats.patientsByCondition.length;
+  const specializations = stats.doctorsBySpecialization.length;
+  const hospitals = stats.doctorsByHospital.length;
+
   return (
     <section className="page">
       <div className="pageHead">
-        <h1>Dashboard</h1>
-        <p className="mutedSmall">
-          Registry analytics at a glance.
-        </p>
+        <div>
+          <h1>Dashboard</h1>
+          <p className="mutedSmall">
+            Registry analytics at a glance.
+          </p>
+        </div>
+        <div className="pageActions">
+          <Link href="/doctors" className="button">
+            View Doctors
+          </Link>
+          <Link href="/patients" className="button">
+            View Patients
+          </Link>
+        </div>
       </div>
 
       <div className="statsGrid">
@@ -56,6 +76,27 @@ export default function DashboardPage() {
         <div className="statCard">
           <span className="statLabel">Patients</span>
           <span className="statValue">{stats.patientsTotal}</span>
+        </div>
+        <div className="statCard">
+          <span className="statLabel">Specializations</span>
+          <span className="statValue">{specializations}</span>
+        </div>
+        <div className="statCard">
+          <span className="statLabel">Hospitals</span>
+          <span className="statValue">{hospitals}</span>
+        </div>
+        <div className="statCard">
+          <span className="statLabel">Condition Categories</span>
+          <span className="statValue">{conditions}</span>
+        </div>
+        <div className="statCard">
+          <span className="statLabel">Avg. Patients per Doctor</span>
+          <span className="statValue">
+            {stats.doctorsTotal
+              ? Math.round((stats.patientsTotal / stats.doctorsTotal) * 10) / 10
+              : 0
+            }
+          </span>
         </div>
       </div>
 
