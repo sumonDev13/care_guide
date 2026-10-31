@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   ApiEnvelope,
+  DashboardStats,
   DoctorCreateDto,
   DoctorPatientSummary,
   DoctorSummary,
@@ -187,6 +188,13 @@ export const api = createApi({
         doctorTag(doctorId), // the ex-doctor's patient page/count refresh
       ],
     }),
+
+    /* ---- Dashboard (Step 11) ------------------------------------------- */
+    getDashboardStats: builder.query<DashboardStats, void>({
+      query: () => "dashboard",
+      transformResponse: (raw: ApiEnvelope<{ stats: DashboardStats }>) =>
+        raw.data.stats,
+    }),
   }),
 });
 
@@ -205,4 +213,5 @@ export const {
   useCreatePatientMutation,
   useUpdatePatientMutation,
   useDeletePatientMutation,
+  useGetDashboardStatsQuery,
 } = api;

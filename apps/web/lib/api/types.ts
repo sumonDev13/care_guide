@@ -109,6 +109,31 @@ export type ListDoctorPatientsParams = {
   limit?: number;
 };
 
+/* ---- Dashboard (Step 11) ------------------------------------------------- */
+
+export type DashboardStats = {
+  doctorsTotal: number;
+  patientsTotal: number;
+  patientsByCondition: Array<{ condition: string; count: number }>;
+  patientsByDoctor: Array<{ doctorId: string; doctorName: string; count: number }>;
+  doctorsBySpecialization: Array<{ specialization: string; count: number }>;
+  doctorsByHospital: Array<{ hospital: string; count: number }>;
+  recentDoctors: Array<{
+    id: string;
+    name: string;
+    specialization: string;
+    hospital: string;
+    createdAt?: string;
+  }>;
+  recentPatients: Array<{
+    id: string;
+    name: string;
+    condition: string;
+    doctorId: string;
+    createdAt?: string;
+  }>;
+};
+
 /* ---- Patients (decision #17 semantics) ----------------------------------- */
 
 export type PatientSummary = {

@@ -74,6 +74,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <nav className="adminNav" aria-label="Console sections">
           <Link href="/doctors">Doctors</Link>
           <Link href="/patients">Patients</Link>
+          <Link href="/dashboard">Dashboard</Link>
         </nav>
         <p className="sessionInfo">
           {admin.name} · {admin.email}

@@ -4,6 +4,7 @@ import { healthRouter } from "./health.routes.js";
 import { makeAuthRouter } from "./auth.routes.js";
 import { makeDoctorsRouter } from "./doctors.routes.js";
 import { makePatientsRouter } from "./patients.routes.js";
+import { makeDashboardRouter } from "./dashboard.routes.js";
 
 /**
  * Options plumbed only for test isolation of shared-process behavior
@@ -28,6 +29,7 @@ export function makeApiRouter(options: CreateAppOptions = {}): Router {
   apiRouter.use("/auth", makeAuthRouter(options.loginLimiter));
   apiRouter.use("/doctors", makeDoctorsRouter());
   apiRouter.use("/patients", makePatientsRouter());
+  apiRouter.use("/dashboard", makeDashboardRouter());
 
   return apiRouter;
 }
