@@ -29,6 +29,24 @@ export function isUnauthorized(error: unknown): boolean {
   return isFetchBaseQueryError(error) && error.status === 401;
 }
 
+export type FieldErrors = Record<string, string>;
+
+/**
+ * Field-level errors from a 422 (the API-first validation policy: forms do
+ * not re-implement the server's rules, they render its `details` verbatim).
+ */
+export function fieldErrors(error: unknown): FieldErrors {
+  if (isFetchBaseQueryError(error)) {
+    const body = asErrorBody(error.data);
+    if (body && Array.isArray(body.error.details)) {
+      const errors: FieldErrors = {};
+      for (const item of body.error.details) errors[item.field] = item.message;
+      return errors;
+    }
+  }
+  return {};
+}
+
 /**
  * One human-readable line from any shape the client can receive: the API's
  * error envelope, transport failure, or a plain status code.

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useLogoutMutation, useMeQuery } from "@/lib/api/api";
@@ -70,6 +71,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="adminShell">
       <header className="adminHeader">
         <p className="brandSmall">Doctor Tracker</p>
+        <nav className="adminNav" aria-label="Console sections">
+          <Link href="/doctors">Doctors</Link>
+        </nav>
         <p className="sessionInfo">
           {admin.name} · {admin.email}
         </p>

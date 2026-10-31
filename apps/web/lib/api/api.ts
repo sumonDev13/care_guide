@@ -1,13 +1,52 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { ApiEnvelope, LoginCredentials, SessionData } from "./types";
+import type {
+  ApiEnvelope,
+  DoctorCreateDto,
+  DoctorPatientSummary,
+  DoctorSummary,
+  DoctorUpdateDto,
+  ListDoctorPatientsParams,
+  ListDoctorsParams,
+  LoginCredentials,
+  PaginationMeta,
+  SessionData,
+} from "./types";
+
+/**
+ * Query params serializer: `undefined` and `""` mean "no filter" and must not
+ * reach the URL at all (the API treats an empty-string filter as absent, but
+ * honest URLs keep devtools readable and cache keys stable).
+ */
+function listQuery(
+  params: Record<string, string | number | undefined>,
+): Record<string, string> {
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    clean[key] = String(value);
+  }
+  return clean;
+}
+
+/** Lists always carry `meta` (decision #16); typed defensively for the future. */
+const EMPTY_PAGINATION: PaginationMeta = { page: 1, limit: 0, total: 0, totalPages: 1 };
+
+/** Tag constructor keeps the literal tag name from widening to `string`. */
+type DoctorTagId = string | "LIST";
+function doctorTag(id: DoctorTagId): { type: "Doctors"; id: DoctorTagId } {
+  return { type: "Doctors", id };
+}
 
 /**
  * The single typed RTK Query slice (decision #7). New data surfaces
- * (doctors/patients in Steps 9-10) register their endpoints and tags here.
+ * (patients in Step 10) register their endpoints and tags here.
  *
  * CSRF defense #3 is applied exactly once, centrally: every mutation carries
  * the `X-Requested-With` marker the API's gate pairs with the SameSite cookie
  * + Origin allowlist (decisions #10/#14).
+ *
+ * Tag layout: `LIST` sentinel + one `Doctors` tag per record id — reads
+ * provide, writes invalidate, so no page can silently go stale.
  */
 export const api = createApi({
   reducerPath: "api",
@@ -21,8 +60,9 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Session"],
+  tagTypes: ["Session", "Doctors"],
   endpoints: (builder) => ({
+    /* ---- Session ------------------------------------------------------- */
     me: builder.query<SessionData, void>({
       query: () => "auth/me",
       transformResponse: (raw: ApiEnvelope<SessionData>) => raw.data,
@@ -46,7 +86,61 @@ export const api = createApi({
         dispatch(api.util.resetApiState());
       },
     }),
+
+    /* ---- Doctors (Steps 9+) -------------------------------------------- */
+    getDoctors: builder.query<{ doctors: DoctorSummary[]; meta: PaginationMeta }, ListDoctorsParams>({
+      query: (params) => ({ url: "doctors", params: listQuery(params) }),
+      transformResponse: (raw: ApiEnvelope<{ doctors: DoctorSummary[] }>) => ({
+        doctors: raw.data.doctors,
+        meta: raw.meta ?? EMPTY_PAGINATION,
+      }),
+      providesTags: (result) =>
+        result && result.doctors.length > 0
+          ? [doctorTag("LIST"), ...result.doctors.map((doctor) => doctorTag(doctor.id))]
+          : [doctorTag("LIST")],
+    }),
+    getDoctor: builder.query<DoctorSummary, string>({
+      query: (id) => `doctors/${id}`,
+      transformResponse: (raw: ApiEnvelope<{ doctor: DoctorSummary }>) => raw.data.doctor,
+      providesTags: (_result, _error, id) => [doctorTag(id)],
+    }),
+    getDoctorPatients: builder.query<
+      { patients: DoctorPatientSummary[]; meta: PaginationMeta },
+      { id: string; params: ListDoctorPatientsParams }
+    >({
+      query: ({ id, params }) => ({ url: `doctors/${id}/patients`, params: listQuery(params) }),
+      transformResponse: (raw: ApiEnvelope<{ patients: DoctorPatientSummary[] }>) => ({
+        patients: raw.data.patients,
+        meta: raw.meta ?? EMPTY_PAGINATION,
+      }),
+      providesTags: (_result, _error, { id }) => [doctorTag(id)],
+    }),
+    createDoctor: builder.mutation<DoctorSummary, DoctorCreateDto>({
+      query: (dto) => ({ url: "doctors", method: "POST", body: dto }),
+      transformResponse: (raw: ApiEnvelope<{ doctor: DoctorSummary }>) => raw.data.doctor,
+      invalidatesTags: [doctorTag("LIST")],
+    }),
+    updateDoctor: builder.mutation<DoctorSummary, { id: string; patch: DoctorUpdateDto }>({
+      query: ({ id, patch }) => ({ url: `doctors/${id}`, method: "PATCH", body: patch }),
+      transformResponse: (raw: ApiEnvelope<{ doctor: DoctorSummary }>) => raw.data.doctor,
+      invalidatesTags: (_result, _error, { id }) => [doctorTag(id), doctorTag("LIST")],
+    }),
+    deleteDoctor: builder.mutation<boolean, string>({
+      query: (id) => ({ url: `doctors/${id}`, method: "DELETE" }),
+      transformResponse: (raw: ApiEnvelope<{ deleted: boolean }>) => raw.data.deleted,
+      invalidatesTags: (_result, _error, id) => [doctorTag("LIST"), doctorTag(id)],
+    }),
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useMeQuery } = api;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useMeQuery,
+  useGetDoctorsQuery,
+  useGetDoctorQuery,
+  useGetDoctorPatientsQuery,
+  useCreateDoctorMutation,
+  useUpdateDoctorMutation,
+  useDeleteDoctorMutation,
+} = api;

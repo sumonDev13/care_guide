@@ -1,18 +1,36 @@
+import Link from "next/link";
+
 /**
- * Protected home (Step 8 placeholder): the session guard lives in this
- * route group's layout, so everything rendered here is already
- * authenticated. The doctor/patient administration surfaces land in
- * Steps 9-10.
+ * Console home. Employees land here after sign-in; every card points at an
+ * administration surface. Rendered inside the (admin) layout guard, so this
+ * content is already authenticated.
  */
 export default function AdminHomePage() {
   return (
     <section>
-      <h1>Doctors &amp; patients</h1>
+      <h1>Console overview</h1>
       <p className="muted">
-        The doctor and patient administration surfaces land in the next steps.
-        Your session, this layout guard and the whole API wiring are already
-        live.
+        Administration surfaces of the doctor &amp; patient registry.
       </p>
+
+      <ul className="homeLinks">
+        <li>
+          <Link className="homeCard" href="/doctors">
+            <strong>Doctors</strong>
+            <span>
+              Search, filter and sort the registry; create and edit records;
+              open per-doctor patient pages; delete with the assigned-patients
+              guard.
+            </span>
+          </Link>
+        </li>
+        <li>
+          <div className="homeCard disabled" aria-disabled="true">
+            <strong>Patients</strong>
+            <span>Full patient registry and management — lands in the next step.</span>
+          </div>
+        </li>
+      </ul>
     </section>
   );
 }

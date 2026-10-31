@@ -69,6 +69,16 @@ single-root policy applies to the API).
   already-authenticated visitors. Mutations inject `X-Requested-With: XMLHttpRequest`
   centrally in fetchBaseQuery's `prepareHeaders`; logout resets the entire RTK cache via
   a store listener middleware so protected data never outlives the session client-side.
+- **Doctors UI (Step 9)**: `/doctors` renders the API's decision #16 contract as a
+  server-driven table — debounced inputs for `search`/`specialization`/`hospital`, a
+  whitelisted sort select and a previous/next pager fed by the list `meta`. Forms carry
+  zero duplicated client rules: submissions surface the API's 422 field details verbatim
+  (and 409/429 messages as alerts) — decision #19's API-first validation. Tags follow a
+  `LIST`-sentinel + per-id layout so every write keeps the visible pages truthful with
+  minimal refetching. Deletion requires an explicit confirm dialog and renders the API's
+  409 "patients still assigned" guidance inline. The doctor detail page also hosts the
+  per-doctor patient pages (`GET /api/doctors/:id/patients`) with condition/sort filters;
+  patient mutations deliberately wait for Step 10.
 - **Doctor–patient relationship**: the patient document holds a required, validated
   `doctorId` reference — the single source of truth. A doctor's patient list is derived by
   query, never duplicated in a second collection.
